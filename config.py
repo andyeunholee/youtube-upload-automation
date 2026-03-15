@@ -20,11 +20,9 @@ def _secret(key: str, default: str = "") -> str:
     return os.environ.get(key, default)
 
 
-# ============================
-# API Keys
-# ============================
-YOUTUBE_API_KEY = _secret("YOUTUBE_API_KEY", "AIzaSyAdi8C434KxtE4RrrM2Nqs9BpNw_3OnaDY")
-GEMINI_API_KEY  = _secret("GEMINI_API_KEY",  "AIzaSyBxeNTPB83S0ZWKrIExQaS3YmQAUb3AEWY")
+# API Keys (Streamlit Secrets에 등록된 값을 사용하며, 로컬에서는 환경변수 또는 secrets.toml을 사용하세요)
+YOUTUBE_API_KEY = _secret("YOUTUBE_API_KEY", "")
+GEMINI_API_KEY  = _secret("GEMINI_API_KEY",  "")
 
 # ============================
 # File Paths
