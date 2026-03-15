@@ -1,0 +1,38 @@
+# 민감한 인증 파일
+client_secrets.json
+*.pickle
+.env
+
+# Streamlit 로컬 secrets (클라우드는 대시보드에서 설정)
+.streamlit/secrets.toml
+
+# 영상/썸네일 (용량 크고 개인 파일)
+videos/
+thumbnails/*.jpg
+thumbnails/*.jpeg
+thumbnails/*.png
+!thumbnails/Thumbnail-Balnk-Frame.jpg
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# 로그
+*.txt
+!requirements.txt
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Google Drive shortcuts
+*.gsheet
+*.gdoc
+*.gslides
