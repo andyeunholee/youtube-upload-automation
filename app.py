@@ -85,10 +85,20 @@ with st.sidebar:
             f"token_youtube_{selected_channel}.pickle",
         )
     )
-    if os.path.exists(token_file):
+    # 인증 여부 확인 (파일 또는 Secrets)
+    is_authenticated = os.path.exists(token_file)
+    if not is_authenticated:
+        try:
+            tokens = st.secrets.get("tokens", {})
+            if tokens.get(selected_channel):
+                is_authenticated = True
+        except Exception:
+            pass
+
+    if is_authenticated:
         st.success(f"✅ 인증 완료 ({selected_channel})")
     else:
-        st.warning("⚠️ 인증 필요\n`python auth_youtube.py` 실행")
+        st.warning("⚠️ 인증 필요\n로컬에서 인증 후 Secrets를 업데이트하세요.")
 
     st.markdown("---")
     if st.button("🔄 처음부터 다시 시작"):
