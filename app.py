@@ -7,6 +7,7 @@ Google Sheets 불필요 - 모든 정보를 UI에서 직접 입력합니다.
 실행: streamlit run app.py
 """
 
+import glob
 import os
 
 import streamlit as st
@@ -30,6 +31,17 @@ TMP_CAMPUS_FILE = os.path.join(config.THUMBNAILS_DIR, "_campus_preview_tmp.jpg")
 
 
 # ── 헬퍼 ───────────────────────────────────────────────────────────────────────
+def cleanup_temp_videos():
+    """Cloud 세션에서 남겨진 임시 비디오 파일 정리"""
+    if not os.path.isdir(config.VIDEOS_DIR):
+        return
+    for f in glob.glob(os.path.join(config.VIDEOS_DIR, "tmp*")):
+        try:
+            os.remove(f)
+        except Exception:
+            pass
+
+
 def get_video_files() -> list:
     if not os.path.isdir(config.VIDEOS_DIR):
         return []
@@ -67,6 +79,7 @@ def get_available_channels() -> list:
 # ── 세션 초기화 ───────────────────────────────────────────────────────────────
 if "step" not in st.session_state:
     st.session_state.step = 1
+    cleanup_temp_videos()  # 이전 세션 임시 파일 정리
 
 # ── 사이드바 ──────────────────────────────────────────────────────────────────
 with st.sidebar:
@@ -130,7 +143,7 @@ st.markdown("---")
 if st.session_state.step == 1:
     st.subheader("Step 1 · 업로드할 영상 파일 선택")
 
-    _is_cloud = not os.path.isdir(config.VIDEOS_DIR)
+    _is_cloud = os.path.exists('/mount/src')  # Streamlit Community Cloud 전용 경로
 
     if _is_cloud:
         # ── 클라우드 모드: 파일 업로더 ──────────────────────────────────────
