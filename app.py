@@ -26,7 +26,6 @@ st.set_page_config(
 
 # ── 상수 ───────────────────────────────────────────────────────────────────────
 STEPS = ["영상 선택", "캠퍼스 이미지", "썸네일 완성", "제목", "설명", "태그", "업로드"]
-VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"}
 TMP_CAMPUS_FILE = os.path.join(config.THUMBNAILS_DIR, "_campus_preview_tmp.jpg")
 
 
@@ -41,14 +40,6 @@ def cleanup_temp_videos():
         except Exception:
             pass
 
-
-def get_video_files() -> list:
-    if not os.path.isdir(config.VIDEOS_DIR):
-        return []
-    return sorted(
-        f for f in os.listdir(config.VIDEOS_DIR)
-        if os.path.splitext(f)[1].lower() in VIDEO_EXTENSIONS
-    )
 
 
 def reset_wizard():
@@ -145,29 +136,17 @@ if st.session_state.step == 1:
 
     _is_cloud = os.path.exists('/mount/src')  # Streamlit Community Cloud 전용 경로
 
-    if _is_cloud:
-        # ── 클라우드 모드: 파일 업로더 ──────────────────────────────────────
-        uploaded_video = st.file_uploader(
-            "영상 파일을 업로드하세요",
-            type=["mp4", "mov", "avi", "mkv", "webm", "m4v"],
-            key="video_upload",
-        )
-        if not uploaded_video:
-            st.info("📂 영상 파일을 선택하세요.")
-            st.stop()
-        size_mb = len(uploaded_video.getbuffer()) / (1024 * 1024)
-        st.caption(f"파일 크기: {size_mb:.1f} MB")
-    else:
-        # ── 로컬 모드: videos/ 폴더에서 선택 ───────────────────────────────
-        video_files = get_video_files()
-        if not video_files:
-            st.warning(f"⚠️ `videos/` 폴더에 영상 파일이 없습니다.\n\n경로: `{config.VIDEOS_DIR}`")
-            st.stop()
-        uploaded_video = None
-        selected = st.selectbox("영상 파일을 선택하세요", video_files)
-        video_path = os.path.join(config.VIDEOS_DIR, selected)
-        size_mb = os.path.getsize(video_path) / (1024 * 1024)
-        st.caption(f"파일 크기: {size_mb:.1f} MB")
+    # 로컬 / Cloud 모두 파일 업로더 방식으로 통일
+    uploaded_video = st.file_uploader(
+        "영상 파일을 업로드하세요",
+        type=["mp4", "mov", "avi", "mkv", "webm", "m4v", "mpeg4"],
+        key="video_upload",
+    )
+    if not uploaded_video:
+        st.info("📂 영상 파일을 선택하세요.")
+        st.stop()
+    size_mb = len(uploaded_video.getbuffer()) / (1024 * 1024)
+    st.caption(f"파일 크기: {size_mb:.1f} MB")
 
     st.markdown("---")
     video_type = st.radio(
@@ -178,20 +157,16 @@ if st.session_state.step == 1:
     )
 
     if st.button("다음 →", type="primary"):
-        if _is_cloud:
-            # 임시 파일로 저장
-            import tempfile
-            _ext = os.path.splitext(uploaded_video.name)[1] or ".mp4"
-            os.makedirs(config.VIDEOS_DIR, exist_ok=True)
-            _tmp_video = tempfile.NamedTemporaryFile(
-                delete=False, suffix=_ext, dir=config.VIDEOS_DIR
-            )
-            _tmp_video.write(uploaded_video.getbuffer())
-            _tmp_video.close()
-            st.session_state.video_file = os.path.basename(_tmp_video.name)
-            st.session_state._cloud_tmp_video = _tmp_video.name
-        else:
-            st.session_state.video_file = selected
+        import tempfile
+        _ext = os.path.splitext(uploaded_video.name)[1] or ".mp4"
+        os.makedirs(config.VIDEOS_DIR, exist_ok=True)
+        _tmp_video = tempfile.NamedTemporaryFile(
+            delete=False, suffix=_ext, dir=config.VIDEOS_DIR
+        )
+        _tmp_video.write(uploaded_video.getbuffer())
+        _tmp_video.close()
+        st.session_state.video_file = os.path.basename(_tmp_video.name)
+        st.session_state._cloud_tmp_video = _tmp_video.name
         st.session_state.is_shorts = video_type.startswith("📱")
         st.session_state.step = 2
         st.rerun()
