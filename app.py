@@ -44,7 +44,7 @@ def cleanup_temp_videos():
 
 def reset_wizard():
     keys = [
-        "step", "video_file", "university_name",
+        "step", "video_file", "_local_video_path", "university_name",
         "campus_image_path", "thumbnail_filename",
         "title", "description", "tags", "is_shorts",
         "upload_done",
@@ -136,17 +136,36 @@ if st.session_state.step == 1:
 
     _is_cloud = os.path.exists('/mount/src')  # Streamlit Community Cloud 전용 경로
 
-    # 로컬 / Cloud 모두 파일 업로더 방식으로 통일
-    uploaded_video = st.file_uploader(
-        "영상 파일을 업로드하세요",
-        type=["mp4", "mov", "avi", "mkv", "webm", "m4v", "mpeg4"],
-        key="video_upload",
-    )
-    if not uploaded_video:
-        st.info("📂 영상 파일을 선택하세요.")
-        st.stop()
-    size_mb = len(uploaded_video.getbuffer()) / (1024 * 1024)
-    st.caption(f"파일 크기: {size_mb:.1f} MB")
+    if _is_cloud:
+        # ── Cloud: 파일 업로더 (1GB 제한) ────────────────────────────────
+        uploaded_video = st.file_uploader(
+            "영상 파일을 업로드하세요",
+            type=["mp4", "mov", "avi", "mkv", "webm", "m4v", "mpeg4"],
+            key="video_upload",
+        )
+        if not uploaded_video:
+            st.info("📂 영상 파일을 선택하세요.")
+            st.stop()
+        size_mb = len(uploaded_video.getbuffer()) / (1024 * 1024)
+        st.caption(f"파일 크기: {size_mb:.1f} MB")
+    else:
+        # ── 로컬: 파일 경로 직접 입력 (크기 제한 없음) ───────────────────
+        st.caption("💡 Windows Explorer에서 파일을 우클릭 → **'경로로 복사'** 후 붙여넣기")
+        local_path = st.text_input(
+            "영상 파일 경로",
+            placeholder=r'C:\Users\...\video.mp4',
+            value=st.session_state.get("_local_video_path", ""),
+        )
+        local_path = local_path.strip().strip('"')  # 따옴표 자동 제거
+        if not local_path:
+            st.info("📂 영상 파일 경로를 입력하세요.")
+            st.stop()
+        if not os.path.isfile(local_path):
+            st.error(f"파일을 찾을 수 없습니다: `{local_path}`")
+            st.stop()
+        size_mb = os.path.getsize(local_path) / (1024 * 1024)
+        st.caption(f"파일 크기: {size_mb:.1f} MB  ✅ 파일 확인됨")
+        uploaded_video = None
 
     st.markdown("---")
     video_type = st.radio(
@@ -157,16 +176,21 @@ if st.session_state.step == 1:
     )
 
     if st.button("다음 →", type="primary"):
-        import tempfile
-        _ext = os.path.splitext(uploaded_video.name)[1] or ".mp4"
-        os.makedirs(config.VIDEOS_DIR, exist_ok=True)
-        _tmp_video = tempfile.NamedTemporaryFile(
-            delete=False, suffix=_ext, dir=config.VIDEOS_DIR
-        )
-        _tmp_video.write(uploaded_video.getbuffer())
-        _tmp_video.close()
-        st.session_state.video_file = os.path.basename(_tmp_video.name)
-        st.session_state._cloud_tmp_video = _tmp_video.name
+        if _is_cloud:
+            import tempfile
+            _ext = os.path.splitext(uploaded_video.name)[1] or ".mp4"
+            os.makedirs(config.VIDEOS_DIR, exist_ok=True)
+            _tmp_video = tempfile.NamedTemporaryFile(
+                delete=False, suffix=_ext, dir=config.VIDEOS_DIR
+            )
+            _tmp_video.write(uploaded_video.getbuffer())
+            _tmp_video.close()
+            st.session_state.video_file = os.path.basename(_tmp_video.name)
+            st.session_state._cloud_tmp_video = _tmp_video.name
+        else:
+            # 로컬: 절대 경로 그대로 저장 (복사 불필요)
+            st.session_state.video_file = local_path
+            st.session_state._local_video_path = local_path
         st.session_state.is_shorts = video_type.startswith("📱")
         st.session_state.step = 2
         st.rerun()
@@ -477,7 +501,8 @@ elif st.session_state.step == 7:
 
     with col_upload:
         if st.button("🚀 YouTube에 업로드 시작", type="primary"):
-            _video_path = os.path.join(config.VIDEOS_DIR, st.session_state.video_file)
+            _vf = st.session_state.video_file
+            _video_path = _vf if os.path.isabs(_vf) else os.path.join(config.VIDEOS_DIR, _vf)
             _thumb = None
             if "thumbnail_filename" in st.session_state:
                 tp = os.path.join(config.THUMBNAILS_DIR, st.session_state.thumbnail_filename)
