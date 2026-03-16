@@ -149,22 +149,32 @@ if st.session_state.step == 1:
         size_mb = len(uploaded_video.getbuffer()) / (1024 * 1024)
         st.caption(f"파일 크기: {size_mb:.1f} MB")
     else:
-        # ── 로컬: 파일 경로 직접 입력 (크기 제한 없음) ───────────────────
-        st.caption("💡 Windows Explorer에서 파일을 우클릭 → **'경로로 복사'** 후 붙여넣기")
-        local_path = st.text_input(
-            "영상 파일 경로",
-            placeholder=r'C:\Users\...\video.mp4',
-            value=st.session_state.get("_local_video_path", ""),
-        )
-        local_path = local_path.strip().strip('"')  # 따옴표 자동 제거
+        # ── 로컬: 네이티브 파일 선택창 (크기 제한 없음) ──────────────────
+        if st.button("📁 파일 찾기", type="secondary"):
+            import tkinter as tk
+            from tkinter import filedialog
+            root = tk.Tk()
+            root.withdraw()
+            root.wm_attributes('-topmost', 1)
+            picked = filedialog.askopenfilename(
+                title="영상 파일 선택",
+                filetypes=[("Video files", "*.mp4 *.mov *.avi *.mkv *.webm *.m4v"), ("All files", "*.*")],
+            )
+            root.destroy()
+            if picked:
+                st.session_state._local_video_path = picked
+                st.rerun()
+
+        local_path = st.session_state.get("_local_video_path", "")
         if not local_path:
-            st.info("📂 영상 파일 경로를 입력하세요.")
+            st.info("📂 위 버튼을 눌러 영상 파일을 선택하세요.")
             st.stop()
         if not os.path.isfile(local_path):
             st.error(f"파일을 찾을 수 없습니다: `{local_path}`")
             st.stop()
+        st.success(f"✅ {os.path.basename(local_path)}")
         size_mb = os.path.getsize(local_path) / (1024 * 1024)
-        st.caption(f"파일 크기: {size_mb:.1f} MB  ✅ 파일 확인됨")
+        st.caption(f"파일 크기: {size_mb:.1f} MB")
         uploaded_video = None
 
     st.markdown("---")
