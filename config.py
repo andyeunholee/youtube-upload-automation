@@ -44,6 +44,11 @@ THUMBNAIL_FRAME_FILE = os.path.join(THUMBNAILS_DIR, "Thumbnail-Balnk-Frame.jpg")
 DEFAULT_CATEGORY = "27"    # 27 = Education
 DEFAULT_PRIVACY  = "private"
 
+# 고정 업로드 채널 이름 (auth_youtube.py 실행 시 사용한 채널 이름과 일치해야 함)
+# "default" = token_youtube.pickle 사용
+# 다른 이름 = token_youtube_{이름}.pickle 사용
+DEFAULT_CHANNEL  = _secret("DEFAULT_CHANNEL", "엔디쌤tv")
+
 # ============================
 # Thumbnail Settings
 # ============================

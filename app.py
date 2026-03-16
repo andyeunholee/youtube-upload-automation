@@ -71,11 +71,9 @@ if "step" not in st.session_state:
 # ── 사이드바 ──────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.header("⚙️ 채널 설정")
-    channels = get_available_channels()
-    _default_ch = "엔디쌤tv_-_미국_대학_이야기"
-    _default_idx = channels.index(_default_ch) if _default_ch in channels else 0
-    selected_channel = st.selectbox("업로드 채널", channels, index=_default_idx)
+    selected_channel = config.DEFAULT_CHANNEL
     st.session_state["selected_channel"] = selected_channel
+    st.info(f"📺 업로드 채널: **{selected_channel}**")
 
     token_file = (
         config.TOKEN_FILE.replace(".pickle", "_youtube.pickle")
