@@ -36,7 +36,7 @@ THUMBNAILS_DIR      = os.path.join(BASE_DIR, "thumbnails")
 TOKEN_FILE = os.path.join(BASE_DIR, "token.pickle")
 
 # 썸네일 블랭크 프레임 파일
-THUMBNAIL_FRAME_FILE = os.path.join(THUMBNAILS_DIR, "Thumbnail-Balnk-Frame.jpg")
+THUMBNAIL_FRAME_FILE = os.path.join(THUMBNAILS_DIR, "Thumbnail-Final-Frame.png")
 
 # ============================
 # YouTube Upload Defaults

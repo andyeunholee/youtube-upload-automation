@@ -12,6 +12,7 @@ thumbnails/*.jpg
 thumbnails/*.jpeg
 thumbnails/*.png
 !thumbnails/Thumbnail-Balnk-Frame.jpg
+!thumbnails/Thumbnail-Final-Frame.png
 
 # Python
 __pycache__/
