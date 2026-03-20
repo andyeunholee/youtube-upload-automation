@@ -151,16 +151,24 @@ if st.session_state.step == 1:
     else:
         # ── 로컬: 네이티브 파일 선택창 (크기 제한 없음) ──────────────────
         if st.button("📁 파일 찾기", type="secondary"):
-            import tkinter as tk
-            from tkinter import filedialog
-            root = tk.Tk()
-            root.withdraw()
-            root.wm_attributes('-topmost', 1)
-            picked = filedialog.askopenfilename(
-                title="영상 파일 선택",
-                filetypes=[("Video files", "*.mp4 *.mov *.avi *.mkv *.webm *.m4v"), ("All files", "*.*")],
+            import subprocess, sys
+            _script = (
+                "import tkinter as tk\n"
+                "from tkinter import filedialog\n"
+                "root = tk.Tk()\n"
+                "root.withdraw()\n"
+                "root.wm_attributes('-topmost', 1)\n"
+                "path = filedialog.askopenfilename(\n"
+                "    title='영상 파일 선택',\n"
+                "    filetypes=[('Video files', '*.mp4 *.mov *.avi *.mkv *.webm *.m4v'), ('All files', '*.*')])\n"
+                "root.destroy()\n"
+                "print(path, end='')\n"
             )
-            root.destroy()
+            result = subprocess.run(
+                [sys.executable, "-c", _script],
+                capture_output=True, text=True, timeout=300
+            )
+            picked = result.stdout.strip()
             if picked:
                 st.session_state._local_video_path = picked
                 st.rerun()
