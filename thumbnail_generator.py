@@ -117,7 +117,8 @@ def generate_campus_image(university_name: str) -> tuple:
         f"Beautiful university buildings and classic architecture, lush green lawns, "
         f"tall trees with full foliage, clear blue sky with fluffy white clouds, "
         f"daytime, vibrant natural colors, photorealistic, no text, no watermarks, "
-        f"no people in foreground, high resolution."
+        f"no people in foreground, high resolution. "
+        f"No aircraft, no drones, no blimps, no airships, no birds, nothing in the sky except clouds."
     )
 
     error1 = None
