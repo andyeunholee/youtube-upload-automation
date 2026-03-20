@@ -47,7 +47,7 @@ def reset_wizard():
         "step", "video_file", "_local_video_path", "university_name",
         "campus_image_path", "thumbnail_filename",
         "title", "description", "tags", "is_shorts",
-        "upload_done",
+        "upload_done", "_is_picking", "_picker_result_file",
     ]
     for k in keys:
         st.session_state.pop(k, None)
@@ -149,40 +149,79 @@ if st.session_state.step == 1:
         size_mb = len(uploaded_video.getbuffer()) / (1024 * 1024)
         st.caption(f"파일 크기: {size_mb:.1f} MB")
     else:
-        # ── 로컬: 네이티브 파일 선택창 (크기 제한 없음) ──────────────────
-        if st.button("📁 파일 찾기", type="secondary"):
-            import subprocess, sys
-            _script = (
-                "import tkinter as tk\n"
-                "from tkinter import filedialog\n"
-                "root = tk.Tk()\n"
-                "root.withdraw()\n"
-                "root.wm_attributes('-topmost', 1)\n"
-                "path = filedialog.askopenfilename(\n"
-                "    title='영상 파일 선택',\n"
-                "    filetypes=[('Video files', '*.mp4 *.mov *.avi *.mkv *.webm *.m4v'), ('All files', '*.*')])\n"
-                "root.destroy()\n"
-                "print(path, end='')\n"
-            )
-            result = subprocess.run(
-                [sys.executable, "-c", _script],
-                capture_output=True, text=True, timeout=300
-            )
-            picked = result.stdout.strip()
-            if picked:
-                st.session_state._local_video_path = picked
+        # ── 로컬: 네이티브 파일 선택창 (non-blocking Popen) ──────────────
+        import subprocess, sys, tempfile as _tf
+
+        # 파일 선택창이 열려있는 상태: 결과 확인 버튼 표시
+        if st.session_state.get("_is_picking"):
+            st.info("📂 파일 선택 창에서 영상을 선택한 후 아래 버튼을 클릭하세요.")
+            _col1, _col2 = st.columns([1, 3])
+            with _col1:
+                _confirm = st.button("✅ 선택 완료", type="primary")
+            with _col2:
+                _cancel = st.button("❌ 취소")
+            if _confirm:
+                _rf = st.session_state.get("_picker_result_file", "")
+                _picked = ""
+                if _rf and os.path.exists(_rf):
+                    try:
+                        with open(_rf, "r", encoding="utf-8") as _f:
+                            _picked = _f.read().strip()
+                        os.unlink(_rf)
+                    except Exception:
+                        pass
+                st.session_state.pop("_picker_result_file", None)
+                st.session_state.pop("_is_picking", None)
+                if _picked and os.path.isfile(_picked):
+                    st.session_state._local_video_path = _picked
+                    st.rerun()
+                else:
+                    st.warning("파일이 선택되지 않았거나 경로를 찾을 수 없습니다.")
+            if _cancel:
+                _rf = st.session_state.pop("_picker_result_file", "")
+                if _rf and os.path.exists(_rf):
+                    try: os.unlink(_rf)
+                    except: pass
+                st.session_state.pop("_is_picking", None)
+                st.rerun()
+        else:
+            if st.button("📁 파일 찾기", type="secondary"):
+                _tmp = _tf.NamedTemporaryFile(delete=False, suffix=".txt", mode="w")
+                _tmp.close()
+                _result_path = _tmp.name
+                _script = (
+                    "import tkinter as tk\n"
+                    "from tkinter import filedialog\n"
+                    "import sys\n"
+                    "result_file = sys.argv[1]\n"
+                    "root = tk.Tk()\n"
+                    "root.withdraw()\n"
+                    "root.wm_attributes('-topmost', 1)\n"
+                    "path = filedialog.askopenfilename(\n"
+                    "    title='영상 파일 선택',\n"
+                    "    filetypes=[('Video files', '*.mp4 *.mov *.avi *.mkv *.webm *.m4v'), ('All files', '*.*')])\n"
+                    "root.destroy()\n"
+                    "with open(result_file, 'w', encoding='utf-8') as f:\n"
+                    "    f.write(path or '')\n"
+                )
+                subprocess.Popen([sys.executable, "-c", _script, _result_path])
+                st.session_state["_picker_result_file"] = _result_path
+                st.session_state["_is_picking"] = True
                 st.rerun()
 
         local_path = st.session_state.get("_local_video_path", "")
-        if not local_path:
-            st.info("📂 위 버튼을 눌러 영상 파일을 선택하세요.")
+        if not st.session_state.get("_is_picking"):
+            if not local_path:
+                st.info("📂 위 버튼을 눌러 영상 파일을 선택하세요.")
+                st.stop()
+            if not os.path.isfile(local_path):
+                st.error(f"파일을 찾을 수 없습니다: `{local_path}`")
+                st.stop()
+            st.success(f"✅ {os.path.basename(local_path)}")
+            size_mb = os.path.getsize(local_path) / (1024 * 1024)
+            st.caption(f"파일 크기: {size_mb:.1f} MB")
+        else:
             st.stop()
-        if not os.path.isfile(local_path):
-            st.error(f"파일을 찾을 수 없습니다: `{local_path}`")
-            st.stop()
-        st.success(f"✅ {os.path.basename(local_path)}")
-        size_mb = os.path.getsize(local_path) / (1024 * 1024)
-        st.caption(f"파일 크기: {size_mb:.1f} MB")
         uploaded_video = None
 
     st.markdown("---")
