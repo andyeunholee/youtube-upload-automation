@@ -101,24 +101,31 @@ class YouTubeUploader:
         # 3) 갱신 또는 재인증
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-                # 갱신된 토큰을 로컬에 저장 (로컬 실행 시)
                 try:
-                    with open(token_file, 'wb') as token:
-                        pickle.dump(creds, token)
-                except Exception:
-                    pass
-            else:
+                    creds.refresh(Request())
+                    # 갱신된 토큰을 로컬에 저장
+                    try:
+                        with open(token_file, 'wb') as token:
+                            pickle.dump(creds, token)
+                    except Exception:
+                        pass
+                except Exception as e:
+                    print(f"⚠️ 토큰 갱신 실패: {e}")
+                    # 만료된 토큰 삭제 후 재인증 시도
+                    if os.path.exists(token_file):
+                        os.remove(token_file)
+                    creds = None
+
+            if not creds or not creds.valid:
                 self._ensure_client_secrets()
                 if not os.path.exists(config.CLIENT_SECRETS_FILE):
                     raise Exception(
                         "인증 토큰이 없습니다.\n"
-                        "로컬에서 auth_youtube.py를 실행한 후 generate_secrets.py로 "
-                        "Streamlit secrets를 업데이트하세요."
+                        "터미널에서 python auth_youtube.py 를 실행하세요."
                     )
                 flow = InstalledAppFlow.from_client_secrets_file(
                     config.CLIENT_SECRETS_FILE, SCOPES)
-                creds = flow.run_local_server(port=0)
+                creds = flow.run_local_server(port=8090, open_browser=True)
                 with open(token_file, 'wb') as token:
                     pickle.dump(creds, token)
 
